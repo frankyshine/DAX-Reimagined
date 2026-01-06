@@ -1,5 +1,3 @@
-# DAX-Reimagined
-
 # DAX Reimagined – Source Code
 This repository contains the official source code companion for the book DAX Reimagined by Frank A. Banin.
 It provides the verbatim executable DAX and SQL listings referenced in the book, organized by chapter for easy lookup and review.
