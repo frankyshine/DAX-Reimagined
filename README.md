@@ -21,6 +21,7 @@ DAX-Reimagined/
 + `ch06_User-Driven-Filters-and-Interactive-DAX.txt`
 
 
+
 - One file per chapter
 - Exact listing numbers and titles preserved
 - DAX and SQL labeled inline
