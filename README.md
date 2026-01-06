@@ -13,12 +13,13 @@ This repository contains only the code.
 
 # Structure
 DAX-Reimagined/
-- `ch01_Chapter-1-Executable-Listings.txt`
-- `ch02_Chapter-2-Executable-Listings.txt`
-- `ch03_Chapter-3-Executable-Listings.txt`
-- `ch04_Model-Manipulation-Core-Functions.txt`
-- `ch05_Calculate-and-Context-Transition.txt`
-- `ch06_User-Driven-Filters-and-Interactive-DAX.txt`
++ `ch01_Chapter-1-Executable-Listings.txt`
++ `ch02_Chapter-2-Executable-Listings.txt`
++ `ch03_Chapter-3-Executable-Listings.txt`
++ `ch04_Model-Manipulation-Core-Functions.txt`
++ `ch05_Calculate-and-Context-Transition.txt`
++ `ch06_User-Driven-Filters-and-Interactive-DAX.txt`
+
 
 - One file per chapter
 - Exact listing numbers and titles preserved
