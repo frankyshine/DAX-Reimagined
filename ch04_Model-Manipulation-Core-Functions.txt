@@ -1,0 +1,306 @@
+Listing 4.1 Distinct product categories
+
+EVALUATE
+VALUES ( Product[Category] )
+
+
+Listing 4.2 Sales by region and year
+
+EVALUATE
+SUMMARIZECOLUMNS(
+    SalesTerritory[Region],
+    'Date'[CalendarYear],
+    "Total Sales", SUM(Sales[Sales Amount])
+)
+
+
+
+Listing 4.3 Reseller names and countries
+
+EVALUATE
+SELECTCOLUMNS(
+    Sales,
+    "Order ID", Sales[SalesOrderLineKey],
+    "Reseller Name", RELATED(Reseller[ResellerName]),
+    "Country", RELATED('SalesTerritory'[Country])
+)
+
+
+Listing 4.4 Adding related info to sales
+
+EVALUATE
+ADDCOLUMNS(
+    Sales,
+    "Product Category", RELATED(Product[Category]),
+    "Reseller Type", RELATED(Reseller[BusinessType])
+)
+
+
+Listing 4.5 Sales filtered to east region
+
+EVALUATE
+CALCULATETABLE(
+    Sales,
+    SalesTerritory[Region] = "Northwest"
+)
+
+
+
+Listing 4.6 Product categories with total sales
+
+EVALUATE
+ADDCOLUMNS(
+    VALUES(Product[Category]),
+    "Total Sales", CALCULATE(SUM(Sales[Sales Amount]))
+)
+
+
+
+Listing 4.7 Customers and their total sales
+
+EVALUATE
+SELECTCOLUMNS(
+    VALUES(Sales[CustomerKey]),
+    "CustomerKey", Sales[CustomerKey],
+    "TotalSales", [Sales]
+)
+
+
+
+Listing 4.8 High-value sales rows with metadata
+
+EVALUATE
+ADDCOLUMNS(
+    FILTER(Sales, Sales[Sales Amount] > 5000),
+    "OrderID", Sales[SalesOrderLineKey],
+    "Entity", COALESCE(RELATED(Reseller[Reseller]), RELATED(Customer[Customer]))
+)
+
+Listing 4.9 Filter enriched rows based on sales threshold
+
+EVALUATE
+FILTER(
+    ADDCOLUMNS(
+        Sales,
+        "OrderID", Sales[SalesOrderLineKey],
+        "Entity", COALESCE(RELATED(Reseller[ResellerName]), RELATED(Customer[Customer]))
+    ),
+    Sales[Sales Amount] > 5000
+)
+
+
+Listing 4.10 Enriched high-sales data
+
+EVALUATE
+CALCULATETABLE(
+    ADDCOLUMNS(
+        Sales,
+        "OrderID", Sales[SalesOrderLineKey],
+        "Entity", COALESCE(RELATED(Reseller[ResellerName]),      RELATED(Customer[Customer]))
+    ),
+    Sales[Sales Amount] > 5000
+)
+
+
+Listing 4.11 Project and filter sales details
+
+EVALUATE
+CALCULATETABLE(
+    SELECTCOLUMNS(
+        Sales,
+        "OrderID", Sales[SalesOrderLineKey],
+        "SalesAmount", Sales[Sales Amount],
+        "Entity", COALESCE(RELATED(Reseller[ResellerName]), RELATED(Customer[Customer]))
+    ),
+    Sales[Sales Amount] > 5000
+)
+
+
+
+
+Listing 4.12 nested summarizations
+
+WITH SalesByProduct AS (
+    SELECT
+        s.ProductKey,
+        SUM(s.SalesAmount) AS TotalSales
+    FROM [dbo].[vFactSales] AS s
+    GROUP BY s.ProductKey
+),
+HighSalesProducts AS (
+    SELECT ProductKey
+    FROM SalesByProduct
+    WHERE TotalSales > 50000
+)
+SELECT
+    p.EnglishProductName AS Product,
+    s.TotalSales
+FROM HighSalesProducts AS h
+JOIN SalesByProduct AS s
+  ON s.ProductKey = h.ProductKey
+JOIN DimProduct AS p
+  ON p.ProductKey = s.ProductKey
+ORDER BY s.TotalSales DESC;
+EVALUATE
+VAR SalesByProduct =
+    SUMMARIZECOLUMNS(
+        Product[ProductKey],
+        Product[Product],
+        "TotalSales", SUM(Sales[Sales Amount])
+    )
+VAR HighSalesProducts =
+    FILTER(
+        SalesByProduct,
+        [TotalSales] > 50000
+    )
+RETURN
+SELECTCOLUMNS(
+    HighSalesProducts,
+    "Product", [Product],
+    "TotalSales", [TotalSales]
+)
+
+
+
+Listing 4.13 California Reseller Sales
+
+WITH CaliforniaResellers AS (
+    SELECT
+        R.ResellerKey,
+        R.ResellerName
+    FROM DimReseller AS R
+    JOIN DimGeography AS G
+        ON R.GeographyKey = G.GeographyKey
+    WHERE G.StateProvinceName = 'California'
+      AND G.EnglishCountryRegionName = 'United States'
+)
+SELECT
+    C.ResellerName,
+    SUM(FRS.SalesAmount) AS TotalSales
+FROM FactResellerSales AS FRS
+JOIN CaliforniaResellers AS C
+    ON FRS.ResellerKey = C.ResellerKey
+GROUP BY C.ResellerName
+ORDER BY TotalSales DESC;
+EVALUATE
+VAR CaliforniaResellers =
+    FILTER (
+        VALUES ( Reseller[ResellerKey] ),
+        CALCULATE ( MAX ( Reseller[State-Province] )) = "California"
+        && CALCULATE ( MAX ( Reseller[Country-Region] )) = "United States"
+    )
+VAR SalesByReseller =
+    ADDCOLUMNS (
+        CaliforniaResellers,
+        "Reseller Name", CALCULATE ( MAX ( Reseller[Reseller] ) ),
+        "Total Sales",   CALCULATE ( SUM ( Sales[Sales Amount] ) )
+    )
+RETURN
+SELECTCOLUMNS (
+    SalesByReseller,
+    "Reseller Name", [Reseller Name],
+    "Total Sales",   [Total Sales]
+)
+ORDER BY [Total Sales] DESC
+
+
+
+Listing 4.14 Derived columns in subqueries
+
+WITH ProductMargin AS (
+    SELECT
+        p.ProductKey,
+        p.ListPrice - AVG(s.SalesAmount) AS MarginGap
+    FROM DimProduct AS p
+    JOIN [dbo].[vFactSales] AS s
+      ON p.ProductKey = s.ProductKey
+    GROUP BY p.ProductKey, p.ListPrice
+)
+SELECT
+    p.EnglishProductName AS Product,
+    pm.MarginGap
+FROM ProductMargin AS pm
+JOIN DimProduct AS p
+  ON pm.ProductKey = p.ProductKey
+ORDER BY pm.MarginGap DESC;
+EVALUATE
+ADDCOLUMNS(
+    SUMMARIZECOLUMNS(
+        Product[ProductKey],
+        Product[Product],
+        Product[List Price]
+    ),
+    "MarginGap", Product[List Price] -  CALCULATE(AVERAGE(Sales[Sales Amount]))
+)
+
+
+
+
+Listing 4.15 Filtered subset with a time slice
+
+WITH Q1Sales AS (
+    SELECT
+        FS.SalesTerritoryKey,
+        SUM(FS.SalesAmount) AS TotalSales
+    FROM FactResellerSales AS FS
+    JOIN DimDate AS D
+        ON FS.OrderDateKey = D.DateKey
+    WHERE D.CalendarQuarter = 1
+    GROUP BY FS.SalesTerritoryKey
+)
+SELECT
+    ST.SalesTerritoryRegion AS Region,
+    Q1S.TotalSales
+FROM Q1Sales AS Q1S
+JOIN DimSalesTerritory AS ST
+    ON Q1S.SalesTerritoryKey = ST.SalesTerritoryKey;
+EVALUATE
+SUMMARIZECOLUMNS(
+    'Sales Territory'[Region],
+    FILTER (
+        Sales,
+        RELATED ( 'Date'[Quarter] ) = "Q1"
+    ),
+    "Total Sales", SUM ( Sales[Sales Amount] )
+)
+
+
+
+Listing 4.16 Conditional subgrouping with aggregation
+
+WITH HighValueCustomers AS (
+    SELECT
+        FS.CustomerKey
+    FROM FactInternetSales AS FS
+    GROUP BY FS.CustomerKey
+    HAVING SUM(FS.SalesAmount) > 10000
+)
+SELECT
+    C.FirstName,
+    C.LastName,
+    SUM(FS.SalesAmount) AS TotalSales
+FROM FactInternetSales AS FS
+JOIN HighValueCustomers AS HVC
+    ON FS.CustomerKey = HVC.CustomerKey
+JOIN DimCustomer AS C
+    ON C.CustomerKey = FS.CustomerKey
+GROUP BY C.FirstName, C.LastName;
+EVALUATE
+VAR HighValueCustomers =
+    FILTER (
+        SUMMARIZECOLUMNS (
+            Customer[CustomerKey],
+            "TotalSales", SUM ( Sales[Sales Amount] )
+        ),
+        [TotalSales] > 10000
+    )
+RETURN
+SUMMARIZECOLUMNS (
+    Customer[Customer],
+    FILTER (
+        Sales,
+        Sales[CustomerKey] IN SELECTCOLUMNS ( HighValueCustomers, [CustomerKey] )
+    ),
+    "TotalSales", SUM ( Sales[Sales Amount] )
+)
+

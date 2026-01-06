@@ -1,0 +1,148 @@
+
+
+DAX – EVALUATE Basics
+
+EVALUATE Product
+EVALUATE { 5 }
+EVALUATE
+ROW ( "Label", 1 )
+Listing A3.2 – TOPN
+EVALUATE
+TOPN ( 5, Product )
+EVALUATE
+TOPN (
+5,
+Product,
+Product[ProductKey],
+ASC
+)
+
+
+DAX – FILTER (SQL WHERE Equivalent)
+
+EVALUATE
+FILTER (
+Product,
+Product[Color] = "Black"
+&& Product[Model] = "Sport-100"
+)
+
+
+DAX – Grouping and Aggregation
+EVALUATE
+SUMMARIZECOLUMNS (
+Sales[OrderDateKey],
+"TotalSales",
+SUM ( Sales[SalesAmount] )
+)
+
+
+DAX – HAVING Equivalent
+EVALUATE
+FILTER (
+SUMMARIZECOLUMNS (
+Reseller[ResellerKey],
+"TotalSales",
+SUM ( Sales[SalesAmount] )
+),
+[TotalSales] > 50000
+)
+
+
+DAX – Projection with SELECTCOLUMNS
+EVALUATE
+SELECTCOLUMNS (
+Product,
+"Product", Product[Product],
+"Color", Product[Color]
+)
+
+
+DAX – Relationship-Based Auto-Expansion
+EVALUATE
+SUMMARIZECOLUMNS (
+Product[Category],
+'Date'[CalendarYear],
+"Total Sales",
+SUM ( Sales[SalesAmount] )
+)
+________________________________________
+
+
+
+Iterators and Relationship Traversal
+
+
+ – SELECTCOLUMNS with RELATED
+EVALUATE
+SELECTCOLUMNS (
+Sales,
+"Order Key", Sales[SalesOrderLineKey],
+"RetailAmount",
+Sales[OrderQuantity]
+* RELATED ( Product[ListPrice] )
+)
+
+
+
+Listing A3.9 – RELATEDTABLE with SUMX
+EVALUATE
+SELECTCOLUMNS (
+DimProductCategory,
+"Category", DimProductCategory[EnglishProductCategoryName],
+"SalesTotal",
+SUMX (
+RELATEDTABLE ( Sales ),
+Sales[SalesAmount]
+)
+)
+_
+
+
+_______________________________________
+
+
+Modular DAX with DEFINE
+
+Listing A3.10 – Profit Filter Example
+DEFINE
+VAR ProfitLimit = 7000
+
+MEASURE Sales[Profit] =
+SUM ( Sales[SalesAmount] )
+- SUM ( Sales[TotalProductCost] )
+
+EVALUATE
+FILTER (
+SUMMARIZECOLUMNS (
+'Date'[CalendarYear],
+"Profit", [Profit]
+),
+[Profit] > ProfitLimit
+)
+
+
+
+Listing A3.11 – Gross Profit Percentage
+DEFINE
+MEASURE Sales[Total Sales] =
+SUM ( Sales[SalesAmount] )
+
+MEASURE Sales[Total Cost] =
+SUM ( Sales[TotalProductCost] )
+
+MEASURE Sales[Gross Profit %] =
+VAR Revenue = [Total Sales]
+VAR Cost = [Total Cost]
+VAR Profit = Revenue - Cost
+RETURN
+DIVIDE ( Profit, Revenue )
+
+EVALUATE
+SUMMARIZECOLUMNS (
+'SalesTerritory'[Region],
+"Total Sales", [Total Sales],
+"Total Cost", [Total Cost],
+"Gross Profit %",
+FORMAT ( [Gross Profit %], "0.0%" )
+)

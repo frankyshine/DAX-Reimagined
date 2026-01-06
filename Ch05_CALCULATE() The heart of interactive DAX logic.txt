@@ -1,0 +1,175 @@
+
+
+Listing 5.1 adding filters or overwriting existing filters
+----------------------------------------------------------
+CALCULATE(
+SUM(‘Sales’[Sales Amount]),
+‘Date’[CalendarYear] = 2020
+)
+
+
+Listing 5.2 Ignoring all filters
+--------------------------------
+CALCULATE(
+SUM(‘Sales’[Sales Amount]),
+REMOVEFILTERS()
+)
+
+
+Listing 5.3 Top N products by profit
+------------------------------------
+CALCULATE(
+[Profit],
+TOPN(5, VALUES(Product[Product]), [Profit], DESC)
+)
+
+
+
+Listing 5.4 Multi-column filtering with SUMMARIZECOLUMNS()
+----------------------------------------------------------
+CALCULATE(
+[Sales],
+SUMMARIZECOLUMNS(
+'Product'[Category],
+'Date'[CalendarYear])
+)
+
+
+
+Listing 5.5 Custom projection with SELECTCOLUMNS()
+--------------------------------------------------
+CALCULATE(
+[Sales],
+SELECTCOLUMNS(
+          'Sales',
+"Year", 'Date'[CalendarYear]
+)
+)
+
+
+Listing 5.6 Combining core functions — FILTER() + ADDCOLUMNS() + VALUES()
+-------------------------------------------------------------------------
+CALCULATE(
+SUM(‘Sales’[Sales Amount]),
+FILTER(
+ADDCOLUMNS(
+VALUES(Product[ProductName]),
+"IsA", LEFT(Product[ProductName], 1)
+),
+[IsA] = "A"
+)
+)
+
+
+Listing 5.7 Filtering with modular logic
+---------------------------------------
+MEASURE 'Sales'[Sales] :=
+VAR BlackProducts =
+FILTER('Product', 'Product'[Color] = "Black")
+VAR YearFilter =
+FILTER('Date', 'Date'[CalendarYear] = 2020)
+RETURN
+CALCULATE(
+SUM([Sales Amount]),
+BlackProducts,
+YearFilter
+)
+
+
+Listing 5.8 Define a base measure
+---------------------------------
+MEASURE 'Sales'[HighMarginSales] :=
+CALCULATE([Sales], 'Sales'[Margin] >= 0.3)
+
+
+Listing 5.9 Compose a new measure using the base
+------------------------------------------------
+MEASURE 'Sales'[BlackHighMarginSales] :=
+VAR BlackProducts =
+FILTER('Product', 'Product'[Color] = "Black")
+RETURN
+CALCULATE([HighMarginSales], BlackProducts)
+
+
+Listing 5.10 Creating filter context in code
+--------------------------------------------
+High Volume Sales :=
+CALCULATE(
+SUM(Sales[Revenue]),
+FILTER(Sales, Sales[Quantity] > 10)
+)
+
+
+Listing 5.11 Row Context with an Iterator
+-----------------------------------------
+Total Revenue :=
+SUMX(
+Sales,
+Sales[Price] * Sales[Quantity]
+)
+
+Listing 5.12 Filtered row-wise evaluation
+-----------------------------------------
+Electronics Revenue :=
+SUMX(
+FILTER(Sales, Sales[Category] = "Bikes"),
+Sales[Price] * Sales[Quantity]
+)
+
+
+Listing 5.13 Comparing SUM() with CALCULATE()
+---------------------------------------------
+EVALUATE
+SELECTCOLUMNS(
+VALUES('Date'[CalendarYear]),
+"Year", 'Date'[CalendarYear],
+"Sum1", SUM(Sales[Sales Amount]),
+"Sum2", CALCULATE(SUM(Sales[Sales Amount]))
+)
+
+
+
+Listing 5.14 Forcing the filter to TV
+-------------------------------------
+TV Sales :=
+CALCULATE(
+SUM('Sales'[Sales]),
+'Sales'[Product] = "TV"
+)
+
+
+Listing 5.15 Ignoring context
+-----------------------------
+EVALUATE
+SELECTCOLUMNS(
+VALUES('Date'[CalendarYear]),
+"Year", 'Date'[CalendarYear],
+"Sum1", SUM('Sales'[Sales Amount]),
+"Sum2", CALCULATE(SUM('Sales'[Sales Amount])),
+"Sum3", CALCULATE(SUM('Sales'[Sales Amount]), REMOVEFILTERS())
+)
+
+
+
+Listing 5.16 Implicit CALCULATE() and context transition at work
+----------------------------------------------------------------
+DEFINE
+MEASURE 'sales'[Sum2] = SUM('Sales'[Sales Amount])
+EVALUATE
+SELECTCOLUMNS(
+VALUES('Date'[CalendarYear]),
+"Year", 'Date'[CalendarYear],
+"Sum1", SUM('Sales'[Sales Amount]),
+"Sum2", [Sum2]
+)
+
+
+Listing 5.17 CALCULATETABLE
+---------------------------
+EVALUATE
+CALCULATETABLE (
+Sales,
+Product[Category] = "Bikes",
+'Date'[CalendarYear] = 2020
+)
+

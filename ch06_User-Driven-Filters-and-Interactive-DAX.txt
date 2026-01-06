@@ -1,0 +1,6 @@
+Listing 6.1 Large sales measure
+
+CALCULATE(
+    SUM(Sales[SalesAmount]),
+    Date[CalendarYear] = 2020
+)

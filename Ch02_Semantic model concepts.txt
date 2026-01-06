@@ -1,0 +1,35 @@
+DAX - Expanded Table Aggregation
+
+EVALUATE
+SUMMARIZECOLUMNS (
+DimProductCategory[EnglishProductCategoryName],
+"Total Discount",
+SUM ( FactInternetSales[DiscountAmount] )
+)
+
+
+
+
+– SQL Equivalent (Explicit Joins)
+
+SELECT
+pc.EnglishProductCategoryName AS Category,
+SUM(s.DiscountAmount) AS TotalDiscount
+FROM FactInternetSales s
+JOIN DimProduct p
+ON s.ProductKey = p.ProductKey
+JOIN DimProductSubcategory psc
+ON p.ProductSubcategoryKey = psc.ProductSubcategoryKey
+JOIN DimProductCategory pc
+ON psc.ProductCategoryKey = pc.ProductCategoryKey
+GROUP BY
+pc.EnglishProductCategoryName;
+
+
+
+DAX – Filtering via Indirect Dimension
+
+CALCULATE (
+SUM ( Sales[SalesAmount] ),
+DimProductCategory[EnglishProductCategoryName] = "Bikes"
+)

@@ -1,0 +1,18 @@
+DAX – Base Measure
+
+Total Sales :=
+SUM ( Sales[SalesAmount] )
+
+
+DAX – Conceptual Implicit CALCULATE
+
+Total Sales :=
+CALCULATE (
+SUM ( Sales[SalesAmount] ),
+Product[Category] = "Bikes",
+'Date'[Year] = 2024,
+SalesTerritory[Region] = [Current Matrix Row]
+)
+
+
+
